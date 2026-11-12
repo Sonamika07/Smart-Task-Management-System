@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow | Smart Task Manager</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+<div class="app-layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-icon">T</span>
+            <span>TaskFlow</span>
+        </div>
+
+        <p class="sidebar-label">WORKSPACE</p>
+        <a href="/" class="nav-link active">▦ Dashboard</a>
+        <a href="#task-section" class="nav-link">☑ All Tasks</a>
+        <a href="#analytics-section" class="nav-link">▥ Analytics</a>
+
+        <div class="sidebar-bottom">
+            <div class="profile">
+                <div class="avatar">NS</div>
+                <div>
+                    <strong>My Workspace</strong>
+                    <small>Personal Account</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h4>Dashboard Overview</h4>
+                <p>Manage your tasks and track your productivity.</p>
+            </div>
+            <span class="workspace-badge">My Workspace</span>
+        </header>
+
+        {% if overdue > 0 %}
+        <div class="alert alert-danger">
+            <strong>Deadline Alert!</strong>
+            You have {{ overdue }} overdue task(s). Please review them.
+        </div>
+        {% endif %}
+
+        <!-- Statistics -->
+        <section class="row g-3 mb-4">
+
+            <div class="col-md-6 col-xl-3">
+                <div class="stat-card blue-card">
+                    <div class="stat-heading">Total Tasks <span>▦</span></div>
+                    <h2>{{ total }}</h2>
+                    <small>All created tasks</small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="stat-card green-card">
+                    <div class="stat-heading">Completed <span>✓</span></div>
+                    <h2>{{ completed }}</h2>
+                    <small>Successfully finished</small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="stat-card orange-card">
+                    <div class="stat-heading">Pending <span>◷</span></div>
+                    <h2>{{ pending }}</h2>
+                    <small>Waiting to start</small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="stat-card purple-card">
+                    <div class="stat-heading">Overdue Tasks <span>!</span></div>
+                    <h2>{{ overdue }}</h2>
+                    <small>Past their deadline</small>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Analytics -->
+        <section class="row g-3 mb-4" id="analytics-section">
+
+            <div class="col-lg-7">
+                <div class="content-card">
+                    <h5>Task Completion Progress</h5>
+                    <p class="text-muted">Track your overall productivity</p>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <strong>Overall Completion</strong>
+                        <strong>{{ completion_rate }}%</strong>
+                    </div>
+
+                    <div class="progress mt-2">
+                        <div class="progress-bar"
+                             style="width: {{ completion_rate }}%">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <small>{{ completed }} completed out of {{ total }}</small>
+                        <small>{{ total - completed }} remaining</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="content-card">
+                    <h5>Priority Distribution</h5>
+                    <p class="text-muted">Tasks by priority level</p>
+
+                    <div class="chart-container">
+                        <canvas id="priorityChart"
+                                data-high="{{ high }}"
+                                data-medium="{{ medium }}"
+                                data-low="{{ low }}">
+                        </canvas>
+                    </div>
+
+                    <div class="priority-legend">
+                        <span>🔴 High: {{ high }}</span>
+                        <span>🟡 Medium: {{ medium }}</span>
+                        <span>🟢 Low: {{ low }}</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Task Management -->
+        <section class="row g-3" id="task-section">
+
+            <div class="col-lg-4">
+                <div class="content-card add-card">
+                    <h5>Add New Task</h5>
+                    <p class="text-muted">Create a new task</p>
+
+                    <form action="/add" method="POST">
+
+                        <label class="form-label">Task Title</label>
+                        <input type="text" name="title"
+                               class="form-control mb-3"
+                               placeholder="Enter task title" required>
+
+                        <label class="form-label">Description</label>
+                        <textarea name="description"
+                                  class="form-control mb-3"
+                                  rows="3"
+                                  placeholder="Describe your task"></textarea>
+
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select mb-3">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+
+                        <label class="form-label">Task Deadline</label>
+                        <input type="date" name="due_date"
+                               class="form-control mb-4"
+                               min="{{ today }}">
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            + Create Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="content-card">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5>Manage Your Tasks</h5>
+                            <p class="text-muted mb-0">
+                                View, update and organize your tasks
+                            </p>
+                        </div>
+
+                        <a href="{{ url_for('export_tasks') }}"
+                           class="btn btn-success">
+                            ↓ Export CSV
+                        </a>
+                    </div>
+
+                    <form method="GET" action="/" class="row g-2 mb-4">
+
+                        <div class="col-md-4">
+                            <input type="text" name="search"
+                                   value="{{ search }}"
+                                   class="form-control"
+                                   placeholder="Search tasks...">
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="priority" class="form-select">
+                                <option value="">All Priority</option>
+                                <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
+                                <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                                <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button class="btn btn-dark w-100">Filter</button>
+                        </div>
+
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+
+                            <thead>
+                                <tr>
+                                    <th>Task Details</th>
+                                    <th>Priority</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                            {% for task in tasks %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ task.title }}</strong>
+                                        <div class="small text-muted">
+                                            {{ task.description }}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ task.created_at }}
+                                        </small>
+                                    </td>
+
+                                    <td>
+                                        <span class="priority-badge
+                                        {% if task.priority == 'High' %}high
+                                        {% elif task.priority == 'Medium' %}medium
+                                        {% else %}low{% endif %}">
+                                            {{ task.priority }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% if task.due_date %}
+                                            <small>{{ task.due_date }}</small>
+
+                                            {% if task.due_date < today and task.status != 'Completed' %}
+                                                <div><span class="badge bg-danger">Overdue</span></div>
+                                            {% elif task.due_date == today and task.status != 'Completed' %}
+                                                <div><span class="badge bg-warning text-dark">Due Today</span></div>
+                                            {% elif task.status == 'Completed' %}
+                                                <div><span class="badge bg-success">Done</span></div>
+                                            {% endif %}
+                                        {% else %}
+                                            <small class="text-muted">Not set</small>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <form action="/update/{{ task.id }}" method="POST">
+                                            <input type="hidden" name="priority"
+                                                   value="{{ task.priority }}">
+
+                                            <select name="status"
+                                                    class="form-select form-select-sm"
+                                                    onchange="this.form.submit()">
+                                                <option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                                <option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                            </select>
+                                        </form>
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="/edit/{{ task.id }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                Edit
+                                            </a>
+
+                                            <form action="/delete/{{ task.id }}"
+                                                  method="POST"
+                                                  onsubmit="return confirmDelete()">
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                            {% else %}
+                                <tr>
+                                    <td colspan="5"
+                                        class="text-center py-5 text-muted">
+                                        No tasks found. Create your first task!
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            TaskFlow | Smart Task & Project Management System
+            <br>
+            Built with Python, Flask, SQLite and Bootstrap
+        </footer>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>
+
+
+
